@@ -36,6 +36,7 @@ table(prostate$train)
 # 30    67
 
 # partition the original data into training and testing datasets
+
 train <- subset( prostate, train==TRUE )[,1:9] # w.o the last variable
 test  <- subset( prostate, train==FALSE)[,1:9] # w.o the last variable
 # Note: There is a typo in "prostate" help file in "ElemStatLearn" package
@@ -103,7 +104,7 @@ summary(fitlsr)
 ## check testing errors
 testst <- test
 for(i in 1:8) {
-  testst[,i] <- testst[,i] - mean(prosqtate[,i]);
+  testst[,i] <- testst[,i] - mean(prostate[,i]);
   testst[,i] <- testst[,i]/sd(prostate[,i]);
 }
 
@@ -137,3 +138,67 @@ sd((test[,9]-test.fitlsr)^2)/sqrt(30)          # 0.1242902
 
 
 #0.7409334  # 0.5233719 # 0.5139785
+
+############################ Solution:::::::::::::
+
+MPE1 <-c() # mean prediction error on testing data using mean training value
+MaPE1<-c() # mean (absolute) prediction error
+MsPE1<-c() # mean (squared) prediction error
+SDE1<-c()  # standard error of mean (squared) prediction error
+
+# mean prediction error based on full model
+MaPE2<-c() # mean (absolute) prediction error
+MsPE2<-c() # mean (squared) prediction error
+SDE2<-c()  # standard error of mean (squared) prediction error
+
+# mean prediction error based on reduced model  
+MaPE3<-c() # mean (absolute) prediction error
+MsPE3<-c() # mean (squared) prediction error
+SDE3<-c()  # standard error of mean (squared) prediction error
+
+
+for ( i in 1:100)
+{
+
+labling<- sample(c(rep(1,67),rep(0,30))) # Creates vector w/ 67 T & 30 F
+train <- subset( prostate, labling==TRUE )[,1:9] # w.o the last variable
+test  <- subset( prostate, labling==FALSE)[,1:9] # w.o the last variable
+
+# fit linear model on training dataset using LS method
+
+trainst <- train
+for(i in 1:8) {
+  trainst[,i] <- trainst[,i] - mean(prostate[,i]);
+  trainst[,i] <- trainst[,i]/sd(prostate[,i]);
+}
+fitls <- lm( lpsa ~ lcavol+lweight+age+lbph+svi+lcp+gleason+pgg45, data=trainst )
+
+## [2] Fit the reduced model:
+fitlsr <- lm( lpsa ~ lcavol+lweight+lbph+svi, data=trainst )
+
+## check testing errors
+
+testst <- test
+for(i in 1:8) {
+  testst[,i] <- testst[,i] - mean(prostate[,i]);
+  testst[,i] <- testst[,i]/sd(prostate[,i]);
+}
+
+
+MPE1  <- append(MPE1, mean(trainst[,9])) # mean prediction error on testing data using mean training value
+MaPE1 <- append(MaPE1,mean(abs(testst[,9]-mean(trainst[,9])))) # mean (absolute) prediction error
+MsPE1 <- append(MsPE1,mean((testst[,9]-mean(trainst[,9]))^2)) # mean (squared) prediction error       
+SDE1  <- append(SDE1,sd((testst[,9]-mean(trainst[,9]))^2)/sqrt(30))# standard error of mean (squared) prediction error
+
+
+test.fitls=predict(fitls, newdata=testst)  # mean prediction error based on full model
+MaPE2 <- append(MaPE2,mean(abs(test[,9]-test.fitls)))# mean (absolute) prediction error
+MsPE2 <- append(MsPE2,mean((test[,9]-test.fitls)^2))# mean (squared) prediction error
+SDE2  <- append(SDE2,sd((test[,9]-test.fitls)^2)/sqrt(30))# standard error of mean (squared) prediction error
+
+test.fitlsr=predict(fitlsr, newdata=testst) # mean prediction error based on reduced model  
+MaPE3 <- append(MaPE3,mean(abs(test[,9]-test.fitlsr)))# mean (absolute) prediction error
+MsPE3 <- append(MsPE3,mean((test[,9]-test.fitlsr)^2))# mean (squared) prediction error
+SDE3  <- append(SDE3,sd((test[,9]-test.fitlsr)^2)/sqrt(30))# standard error of mean (squared) prediction error
+
+}
